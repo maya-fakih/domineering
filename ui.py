@@ -4,9 +4,12 @@ from create_agent import create_agent
 from dominos_ui import DominosUI
 
 class DomineeringUI:
-    def __init__(self, grid_size=8):
+    def __init__(self, grid_size=15):
         pygame.init()
         self.W, self.H = 1300, 800
+
+        #initializing sounds finallyyyy
+        self.sound = SoundManager()
 
         #bringing in the dominos class making them 3d ish
         self.dominos = DominosUI()
@@ -245,7 +248,9 @@ class DomineeringUI:
             self.status_message = f"Player {winner} wins!"
             self.game_locked = False
             self.current_player = None
-
+            # ← PLAY WIN SOUND HERE
+            self.sound.play_win()
+        
         # Agent moves --------------------------------------
         if self.game_locked and self.game and self.current_player and not self.status_message:
             agent = self.agent_v if self.current_player == "V" else self.agent_h
@@ -253,6 +258,13 @@ class DomineeringUI:
 
             if move:
                 self.game.apply_move(move, self.current_player)
+                
+                # ← ← ← PLAY SOUNDS HERE
+                if self.current_player == "V":
+                    self.sound.play_V()
+                else:
+                    self.sound.play_H()
+                
                 self.board = [row[:] for row in self.game.board]
                 self.turn_count += 1
                 self.current_player = self.game.turn
