@@ -25,12 +25,20 @@ class DomineeringGame:
 
     def apply_move(self, move, player):
         r1, c1, r2, c2 = move
-        mark = "V" if player == "V" else "H"
-        self.board[r1][c1] = mark
-        self.board[r2][c2] = mark
+
+        if player == "H":
+            # horizontal domino
+            self.board[r1][c1] = "H"   # origin
+            self.board[r1][c2] = "h"   # second half
+
+        else:  # player == "V"
+            # vertical domino
+            self.board[r1][c1] = "V"   # origin
+            self.board[r2][c1] = "v"   # second half
 
         # switch player
         self.turn = "H" if self.turn == "V" else "V"
+
 
     def get_legal_moves(self, player):
         moves = []

@@ -1,51 +1,21 @@
 import pygame
-from human_agent import HumanAgent
-
-
-class Button:
-    def __init__(self, rect, text, callback, group=None):
-        self.rect = pygame.Rect(rect)
-        self.text = text
-        self.callback = callback
-        self.font = pygame.font.SysFont("arial", 20)
-        self.group = group
-        self.active = False
-
-        self.color_idle = (210, 210, 210)
-        self.color_hover = (235, 235, 235)
-        self.color_active = (180, 200, 255)
-
-    def draw(self, screen):
-        mouse = pygame.mouse.get_pos()
-        if self.active:
-            color = self.color_active
-        else:
-            color = self.color_hover if self.rect.collidepoint(mouse) else self.color_idle
-
-        pygame.draw.rect(screen, color, self.rect)
-        pygame.draw.rect(screen, (0, 0, 0), self.rect, 2)
-
-        text = self.font.render(self.text, True, (0, 0, 0))
-        tx = self.rect.x + (self.rect.width - text.get_width()) // 2
-        ty = self.rect.y + (self.rect.height - text.get_height()) // 2
-        screen.blit(text, (tx, ty))
-
-    def handle(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
-            if self.group:
-                for b in self.group:
-                    b.active = False
-            self.active = True
-            self.callback(self.text)
-
+from button import Button
+from create_agent import create_agent
+from dominos_ui import DominosUI
 
 class DomineeringUI:
     def __init__(self, grid_size=8):
         pygame.init()
         self.W, self.H = 1300, 800
 
+        #bringing in the dominos class making them 3d ish
+        self.dominos = DominosUI()
+
         self.screen = pygame.display.set_mode((self.W, self.H))
         pygame.display.set_caption("Domineering")
+
+        self.title_img = pygame.image.load("domineering_title.png").convert_alpha()
+        self.title_img = pygame.transform.scale(self.title_img, (600, 100))
 
         self.grid_size = grid_size
         self.board_area = pygame.Rect(40, 140, 520, 520)
@@ -85,9 +55,7 @@ class DomineeringUI:
 
         self.clock = pygame.time.Clock()
 
-    # -----------------------------
-    # BUTTON CALLBACKS
-    # -----------------------------
+    # CALLBACKS
     def on_p1_pick(self, mode):
         if not self.game_locked:
             self.selected_p1 = mode
@@ -99,15 +67,14 @@ class DomineeringUI:
     def on_start(self, _):
         if not self.selected_p1 or not self.selected_p2:
             return
-
         self.game_locked = True
         self.status_message = None
         self.turn_count = 1
 
         self.board = [["." for _ in range(self.grid_size)] for _ in range(self.grid_size)]
 
-        self.agent_v = HumanAgent("V")
-        self.agent_h = HumanAgent("H")
+        self.agent_v = create_agent(self.selected_p1, "V")
+        self.agent_h = create_agent(self.selected_p2, "H")
 
         self.current_player = "V"
 
@@ -120,49 +87,77 @@ class DomineeringUI:
 
         self.board = [["." for _ in range(self.grid_size)] for _ in range(self.grid_size)]
 
-        self.game.reset()  # IMPORTANT: Requires your Game class to implement reset()
+        self.game.reset()
 
-        # clear agent pending input
         self.agent_v.pending_move = None
         self.agent_h.pending_move = None
 
-        # allow mode selection again
         for b in self.p1_buttons + self.p2_buttons:
             b.active = False
 
+        self.btn_reset.active = False
+        self.btn_start.active = False
         self.selected_p1 = None
         self.selected_p2 = None
 
-    # -----------------------------
-    # DRAWING
-    # -----------------------------
+    # DRAWING -------------------------------------------------------
     def draw_board(self):
-        pygame.draw.rect(self.screen, (0, 0, 0), self.board_area, 3)
+        pygame.draw.rect(self.screen, (40, 40, 40), self.board_area, 5)
+        pygame.draw.rect(self.screen, (20, 20, 20), self.board_area.inflate(-8, -8), 2)
 
+        # STEP 1 — draw all backgrounds
+        for r in range(self.grid_size):
+            for c in range(self.grid_size):
+                x = self.board_area.x + c * self.cell
+                y = self.board_area.y + r * self.cell
+                col = (160, 160, 160) if (r + c) % 2 else (200, 200, 200)
+                pygame.draw.rect(self.screen, col, (x, y, self.cell, self.cell))
+
+        # STEP 2 — draw dominos ABOVE the grid
         for r in range(self.grid_size):
             for c in range(self.grid_size):
                 x = self.board_area.x + c * self.cell
                 y = self.board_area.y + r * self.cell
 
-                col = (160, 160, 160) if (r + c) % 2 else (200, 200, 200)
-                pygame.draw.rect(self.screen, col, (x, y, self.cell, self.cell))
-
                 if self.board[r][c] == "V":
-                    pygame.draw.rect(self.screen, (255, 80, 80), (x, y, self.cell, self.cell))
-                elif self.board[r][c] == "H":
-                    pygame.draw.rect(self.screen, (80, 120, 255), (x, y, self.cell, self.cell))
+                    if r+1 < self.grid_size:
+                        self.dominos.draw_domino_V(self.screen, x, y, self.cell, self.cell, (255, 80, 80))
 
+                elif self.board[r][c] == "H":
+                    if c+1 < self.grid_size:
+                        self.dominos.draw_domino_H(self.screen, x, y, self.cell, self.cell, (80, 80, 255))
+
+        # Hover preview
         if self.hover_preview:
             for (rr, cc) in self.hover_preview:
                 x = self.board_area.x + cc * self.cell
                 y = self.board_area.y + rr * self.cell
                 pygame.draw.rect(self.screen, (0, 255, 0), (x, y, self.cell, self.cell), width=4)
 
+        # Glow overlay
+        if self.current_player == "V":
+            glow_color = (160, 60, 60)
+        elif self.current_player == "H":
+            glow_color = (60, 100, 160)
+        else:
+            glow_color = (40, 40, 40)
+
+        glow_surf = pygame.Surface((self.board_area.width + 20, self.board_area.height + 20), pygame.SRCALPHA)
+        glow_rect = glow_surf.get_rect()
+        pygame.draw.rect(glow_surf, (*glow_color, 36), glow_rect, border_radius=6)
+        self.screen.blit(glow_surf, (self.board_area.x - 10, self.board_area.y - 10))
+
+        pygame.draw.rect(self.screen, (40, 40, 40), self.board_area, 5)
+        pygame.draw.rect(self.screen, (20, 20, 20), self.board_area.inflate(-8, -8), 2)
+
+
     def draw_controls(self):
         t1 = self.font.render("Player 1", True, (0, 0, 0))
         t2 = self.font.render("Player 2", True, (0, 0, 0))
         self.screen.blit(t1, (930, 160))
         self.screen.blit(t2, (1130, 160))
+
+        self.screen.blit(self.title_img, (350, 20))
 
         for b in self.p1_buttons:
             b.draw(self.screen)
@@ -179,18 +174,14 @@ class DomineeringUI:
             t = self.font.render(f"Turn: {self.turn_count}", True, (0, 0, 0))
         self.screen.blit(t, (600, 180))
 
-    # -----------------------------
-    # HELPERS
-    # -----------------------------
+    # UTIL -----------------------------------------------------------
     def pixel_to_cell(self, pos):
         x, y = pos
         col = (x - self.board_area.x) // self.cell
         row = (y - self.board_area.y) // self.cell
         return row, col
 
-    # -----------------------------
-    # MAIN TICK LOOP
-    # -----------------------------
+    # TICK LOOP -------------------------------------------------------
     def tick(self):
         self.clock.tick(60)
         mouse = pygame.mouse.get_pos()
@@ -227,7 +218,7 @@ class DomineeringUI:
                     if self.game.is_valid(move, self.current_player):
                         agent.set_move_from_ui(move)
 
-        # hover preview
+        # Hover Preview ------------------------------------
         self.hover_preview = None
         if self.game_locked and self.current_player and not self.status_message:
             if self.board_area.collidepoint(mouse):
@@ -242,14 +233,14 @@ class DomineeringUI:
                 if self.game.is_valid(move, self.current_player):
                     self.hover_preview = preview
 
-        # game over
+        # Game over ----------------------------------------
         if self.game and self.game.is_game_over():
             winner = self.game.get_winner()
             self.status_message = f"Player {winner} wins!"
             self.game_locked = False
             self.current_player = None
 
-        # process move
+        # Agent moves --------------------------------------
         if self.game_locked and self.game and self.current_player and not self.status_message:
             agent = self.agent_v if self.current_player == "V" else self.agent_h
             move = agent.get_move(self.game)
@@ -260,7 +251,7 @@ class DomineeringUI:
                 self.turn_count += 1
                 self.current_player = self.game.turn
 
-        # redraw
+        # Redraw -------------------------------------------
         self.screen.fill((230, 230, 230))
         self.draw_board()
         self.draw_controls()
