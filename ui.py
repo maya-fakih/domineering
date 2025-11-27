@@ -27,6 +27,8 @@ class DomineeringUI:
         self.game = None
         self.current_player = None
 
+        self.agent_h = None
+        self.agent_v = None
         self.turn_count = 1
         self.hover_preview = None
         self.status_message = None
@@ -87,10 +89,13 @@ class DomineeringUI:
 
         self.board = [["." for _ in range(self.grid_size)] for _ in range(self.grid_size)]
 
-        self.game.reset()
+        if self.game:
+            self.game.reset()
 
-        self.agent_v.pending_move = None
-        self.agent_h.pending_move = None
+        if self.agent_v:
+            self.agent_v.pending_move = None
+        if self.agent_h:
+            self.agent_h.pending_move = None
 
         for b in self.p1_buttons + self.p2_buttons:
             b.active = False
@@ -99,6 +104,7 @@ class DomineeringUI:
         self.btn_start.active = False
         self.selected_p1 = None
         self.selected_p2 = None
+
 
     # DRAWING -------------------------------------------------------
     def draw_board(self):

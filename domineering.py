@@ -3,6 +3,7 @@ class DomineeringGame:
         self.size = size
         self.board = [["." for _ in range(size)] for _ in range(size)]
         self.turn = "V"  # V starts
+        
 
     def reset(self):
         self.board = [["." for _ in range(self.size)] for _ in range(self.size)]
