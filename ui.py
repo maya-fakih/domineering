@@ -2,15 +2,16 @@ import pygame
 from button import Button
 from create_agent import create_agent
 from dominos_ui import DominosUI
+from sound_manager import SoundManager
 
 class DomineeringUI:
-    def __init__(self, grid_size=15):
+    def __init__(self, grid_size=8):
         pygame.init()
         self.W, self.H = 1300, 800
 
         #initializing sounds finallyyyy
         self.sound = SoundManager()
-
+        self.win_sound_played = False
         #bringing in the dominos class making them 3d ish
         self.dominos = DominosUI()
 
@@ -82,7 +83,8 @@ class DomineeringUI:
         self.agent_h = create_agent(self.selected_p2, "H")
 
         self.current_player = "V"
-
+        self.win_sound_played = False
+    
     def on_reset(self, _):
         self.game_locked = False
         self.status_message = None
@@ -107,7 +109,7 @@ class DomineeringUI:
         self.btn_start.active = False
         self.selected_p1 = None
         self.selected_p2 = None
-
+        self.win_sound_played = False
 
     # DRAWING -------------------------------------------------------
     def draw_board(self):
@@ -244,13 +246,15 @@ class DomineeringUI:
 
         # Game over ----------------------------------------
         if self.game and self.game.is_game_over():
+            if not self.win_sound_played:
+                self.sound.play("win")
+                self.win_sound_played = True
             winner = self.game.get_winner()
             self.status_message = f"Player {winner} wins!"
             self.game_locked = False
             self.current_player = None
-            # ← PLAY WIN SOUND HERE
-            self.sound.play_win()
-        
+
+                
         # Agent moves --------------------------------------
         if self.game_locked and self.game and self.current_player and not self.status_message:
             agent = self.agent_v if self.current_player == "V" else self.agent_h
@@ -261,9 +265,9 @@ class DomineeringUI:
                 
                 # ← ← ← PLAY SOUNDS HERE
                 if self.current_player == "V":
-                    self.sound.play_V()
+                    self.sound.play("place_v")
                 else:
-                    self.sound.play_H()
+                    self.sound.play("place_h")
                 
                 self.board = [row[:] for row in self.game.board]
                 self.turn_count += 1
