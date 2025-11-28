@@ -18,7 +18,7 @@ class DomineeringUI:
         self.screen = pygame.display.set_mode((self.W, self.H))
         pygame.display.set_caption("Domineering")
 
-        self.title_img = pygame.image.load("domineering_title.png").convert_alpha()
+        self.title_img = pygame.image.load("./assets/images/domineering_title.png").convert_alpha()
         self.title_img = pygame.transform.scale(self.title_img, (600, 100))
 
         self.grid_size = grid_size
@@ -111,7 +111,7 @@ class DomineeringUI:
         self.selected_p2 = None
         self.win_sound_played = False
 
-    # DRAWING -------------------------------------------------------
+    # DRAWING ----------------------------------------------gi---------
     def draw_board(self):
         pygame.draw.rect(self.screen, (40, 40, 40), self.board_area, 5)
         pygame.draw.rect(self.screen, (20, 20, 20), self.board_area.inflate(-8, -8), 2)
