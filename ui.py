@@ -3,6 +3,7 @@ from button import Button
 from create_agent import create_agent
 from dominos_ui import DominosUI
 from sound_manager import SoundManager
+from laugh_panel import LaughPanel
 
 class DomineeringUI:
     def __init__(self, grid_size=8):
@@ -17,6 +18,10 @@ class DomineeringUI:
 
         self.screen = pygame.display.set_mode((self.W, self.H))
         pygame.display.set_caption("Domineering")
+
+        #add the funny sounds and imgs
+        self.laugh_panel = LaughPanel()
+        self.laugh_panel.load_reactions(count=2, sound_manager=self.sound)
 
         self.title_img = pygame.image.load("./assets/images/domineering_title.png").convert_alpha()
         self.title_img = pygame.transform.scale(self.title_img, (600, 100))
@@ -91,6 +96,7 @@ class DomineeringUI:
         self.turn_count = 1
         self.current_player = None
         self.hover_preview = None
+        self.laugh_panel.hide()
 
         self.board = [["." for _ in range(self.grid_size)] for _ in range(self.grid_size)]
 
@@ -111,7 +117,7 @@ class DomineeringUI:
         self.selected_p2 = None
         self.win_sound_played = False
 
-    # DRAWING ----------------------------------------------gi---------
+    # DRAWING -------------------------------------------------------
     def draw_board(self):
         pygame.draw.rect(self.screen, (40, 40, 40), self.board_area, 5)
         pygame.draw.rect(self.screen, (20, 20, 20), self.board_area.inflate(-8, -8), 2)
@@ -248,11 +254,18 @@ class DomineeringUI:
         if self.game and self.game.is_game_over():
             if not self.win_sound_played:
                 self.sound.play("win")
+                self.laugh_panel.show_random()
                 self.win_sound_played = True
+            
             winner = self.game.get_winner()
-            self.status_message = f"Player {winner} wins!"
-            self.game_locked = False
-            self.current_player = None
+            if (winner == "H"):
+                self.status_message = f"Player 2 wins!"
+                self.game_locked = False
+                self.current_player = None
+            else:
+                self.status_message = f"Player 1 wins!"
+                self.game_locked = False
+                self.current_player = None
 
                 
         # Agent moves --------------------------------------
@@ -278,6 +291,7 @@ class DomineeringUI:
         self.draw_board()
         self.draw_controls()
         self.draw_stats()
+        self.laugh_panel.draw(self.screen)
         pygame.display.flip()
 
     def run(self):

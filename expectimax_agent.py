@@ -45,16 +45,13 @@ class ExpectimaxAgent(Agent):
 
         if not moves:
             return game.Evaluate(self.player_type)
-
         p = 1 / len(moves)
         total = 0
-
         for mv in moves:
             sim = copy.deepcopy(game)
             sim.apply_move(mv, self.opponent)
             score = self.ExpectiMax(sim, self.player_type, depth - 1)  # FIXED
             total += p * score
-
         return total
 
     # ---------------- ROOT SEARCH ----------------------------

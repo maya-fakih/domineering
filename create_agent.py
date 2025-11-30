@@ -11,9 +11,9 @@ def create_agent(mode, player_type):
     if mode == "Random":
         return RandomAgent(player_type)
     if mode == "Minimax":
-        return MinimaxAgent(player_type, depth=3)
+        return MinimaxAgent(player_type, depth = 1)
     if mode == "Minimax (α–β)":
-        return AlphaBetaAgent(player_type, depth=3)
+        return AlphaBetaAgent(player_type, depth = 2)
     if mode == "Expectimax":
-        return ExpectimaxAgent(player_type, depth=3)
+        return ExpectimaxAgent(player_type, depth = 1)
     raise ValueError("Unknown agent type: " + mode)
