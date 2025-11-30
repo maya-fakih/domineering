@@ -3,7 +3,6 @@ class DomineeringGame:
         self.size = size
         self.board = [["." for _ in range(size)] for _ in range(size)]
         self.turn = "V"  # V starts
-        
 
     def reset(self):
         self.board = [["." for _ in range(self.size)] for _ in range(self.size)]
@@ -60,3 +59,28 @@ class DomineeringGame:
         loser = self.turn
         winner = "H" if loser == "V" else "V"
         return winner
+    
+    def Evaluate(self, player):
+        """
+        Returns a numeric evaluation from the perspective of `player`
+        (player is "V" or "H").
+        Larger = better for player.
+        """
+
+        # terminal first (this is CRITICAL for minimax correctness)
+        if self.is_game_over():
+            winner = self.get_winner()
+
+            if winner == player:
+                return 10000
+            elif winner is None:
+                return 0
+            else:
+                return -10000
+
+        # non-terminal: mobility difference
+        my_moves = len(self.get_legal_moves(player))
+        opponent = "H" if player == "V" else "V"
+        opp_moves = len(self.get_legal_moves(opponent))
+
+        return my_moves - opp_moves

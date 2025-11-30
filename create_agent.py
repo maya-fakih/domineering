@@ -2,6 +2,7 @@ import pygame
 from human_agent import HumanAgent
 from random_agent import RandomAgent
 from minimax_agent import MinimaxAgent
+from alphabeta_agent import AlphaBetaAgent
 from expectimax_agent import ExpectimaxAgent
 
 def create_agent(mode, player_type):
@@ -11,6 +12,8 @@ def create_agent(mode, player_type):
         return RandomAgent(player_type)
     if mode == "Minimax":
         return MinimaxAgent(player_type, depth=3)
+    if mode == "Minimax (α–β)":
+        return AlphaBetaAgent(player_type, depth=3)
     if mode == "Expectimax":
         return ExpectimaxAgent(player_type, depth=3)
     raise ValueError("Unknown agent type: " + mode)

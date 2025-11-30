@@ -41,7 +41,7 @@ class DomineeringUI:
         self.selected_p2 = None
         self.game_locked = False
 
-        modes = ["Human", "Random", "Minimax", "Expectimax"]
+        modes = ["Human", "Random", "Minimax", "Minimax (α–β)", "Expectimax"]
         self.p1_buttons = []
         self.p2_buttons = []
 
