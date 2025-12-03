@@ -5,15 +5,16 @@ from minimax_agent import MinimaxAgent
 from alphabeta_agent import AlphaBetaAgent
 from expectimax_agent import ExpectimaxAgent
 
-def create_agent(mode, player_type):
+def create_agent(mode, player_type, depth=2, debug=False):
     if mode == "Human":
-        return HumanAgent(player_type)
+        return HumanAgent(player_type, debug=debug)
     if mode == "Random":
-        return RandomAgent(player_type)
+        return RandomAgent(player_type, debug=debug)
     if mode == "Minimax":
-        return MinimaxAgent(player_type, depth = 1)
+        return MinimaxAgent(player_type, depth, debug=debug)
     if mode == "Minimax (α–β)":
-        return AlphaBetaAgent(player_type, depth = 2)
+        return AlphaBetaAgent(player_type, depth, debug=debug)
     if mode == "Expectimax":
-        return ExpectimaxAgent(player_type, depth = 1)
+        return ExpectimaxAgent(player_type, depth, debug=debug)
+
     raise ValueError("Unknown agent type: " + mode)

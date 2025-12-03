@@ -6,20 +6,24 @@ from sound_manager import SoundManager
 from laugh_panel import LaughPanel
 
 class DomineeringUI:
-    def __init__(self, grid_size=8):
+    def __init__(self, grid_size=8, depth=1, debug=False):
         pygame.init()
         self.W, self.H = 1300, 800
+        self.depth = depth
+        self.debug = debug
 
-        #initializing sounds finallyyyy
+        if self.debug:
+            print("[DEBUG] DomineeringUI initialized")
+
+        # initializing sounds
         self.sound = SoundManager()
         self.win_sound_played = False
-        #bringing in the dominos class making them 3d ish
+        
         self.dominos = DominosUI()
 
         self.screen = pygame.display.set_mode((self.W, self.H))
         pygame.display.set_caption("Domineering")
 
-        #add the funny sounds and imgs
         self.laugh_panel = LaughPanel()
         self.laugh_panel.load_reactions(count=2, sound_manager=self.sound)
 
@@ -62,35 +66,49 @@ class DomineeringUI:
             b.group = self.p2_buttons
 
         self.btn_start = Button((950, 450, 250, 50), "Start Game", self.on_start)
-        self.btn_reset = Button((950, 520, 250, 50), "Reset", self.on_reset)
+        self.btn_reset  = Button((950, 520, 250, 50), "Reset", self.on_reset)
 
         self.clock = pygame.time.Clock()
 
-    # CALLBACKS
+    # CALLBACKS ----------------------------------------------------
+
     def on_p1_pick(self, mode):
         if not self.game_locked:
+            if self.debug:
+                print(f"[DEBUG] Player 1 selected '{mode}'")
             self.selected_p1 = mode
 
     def on_p2_pick(self, mode):
         if not self.game_locked:
+            if self.debug:
+                print(f"[DEBUG] Player 2 selected '{mode}'")
             self.selected_p2 = mode
 
     def on_start(self, _):
         if not self.selected_p1 or not self.selected_p2:
+            if self.debug:
+                print("[DEBUG] Cannot start: P1 or P2 agent missing")
             return
+
+        if self.debug:
+            print(f"[DEBUG] Starting game — P1:{self.selected_p1}, P2:{self.selected_p2}")
+
         self.game_locked = True
         self.status_message = None
         self.turn_count = 1
 
         self.board = [["." for _ in range(self.grid_size)] for _ in range(self.grid_size)]
 
-        self.agent_v = create_agent(self.selected_p1, "V")
-        self.agent_h = create_agent(self.selected_p2, "H")
+        self.agent_v = create_agent(self.selected_p1, "V", self.depth, debug=self.debug)
+        self.agent_h = create_agent(self.selected_p2, "H", self.depth, debug=self.debug)
 
         self.current_player = "V"
         self.win_sound_played = False
-    
+
     def on_reset(self, _):
+        if self.debug:
+            print("[DEBUG] Resetting game state")
+
         self.game_locked = False
         self.status_message = None
         self.turn_count = 1
@@ -101,6 +119,8 @@ class DomineeringUI:
         self.board = [["." for _ in range(self.grid_size)] for _ in range(self.grid_size)]
 
         if self.game:
+            if self.debug:
+                print("[DEBUG] Game.reset() called")
             self.game.reset()
 
         if self.agent_v:
@@ -117,12 +137,12 @@ class DomineeringUI:
         self.selected_p2 = None
         self.win_sound_played = False
 
-    # DRAWING -------------------------------------------------------
+    # DRAWING ----------------------------------------------------
+
     def draw_board(self):
         pygame.draw.rect(self.screen, (40, 40, 40), self.board_area, 5)
         pygame.draw.rect(self.screen, (20, 20, 20), self.board_area.inflate(-8, -8), 2)
 
-        # STEP 1 — draw all backgrounds
         for r in range(self.grid_size):
             for c in range(self.grid_size):
                 x = self.board_area.x + c * self.cell
@@ -130,7 +150,7 @@ class DomineeringUI:
                 col = (160, 160, 160) if (r + c) % 2 else (200, 200, 200)
                 pygame.draw.rect(self.screen, col, (x, y, self.cell, self.cell))
 
-        # STEP 2 — draw dominos ABOVE the grid
+        # Domino rendering
         for r in range(self.grid_size):
             for c in range(self.grid_size):
                 x = self.board_area.x + c * self.cell
@@ -144,14 +164,14 @@ class DomineeringUI:
                     if c+1 < self.grid_size:
                         self.dominos.draw_domino_H(self.screen, x, y, self.cell, self.cell, (80, 80, 255))
 
-        # Hover preview
+        # Hover preview (NO DEBUG PRINT)
         if self.hover_preview:
             for (rr, cc) in self.hover_preview:
                 x = self.board_area.x + cc * self.cell
                 y = self.board_area.y + rr * self.cell
-                pygame.draw.rect(self.screen, (0, 255, 0), (x, y, self.cell, self.cell), width=4)
+                pygame.draw.rect(self.screen, (0, 255, 0), (x, y, self.cell, self.cell), 4)
 
-        # Glow overlay
+        # Glow highlight
         if self.current_player == "V":
             glow_color = (160, 60, 60)
         elif self.current_player == "H":
@@ -166,7 +186,6 @@ class DomineeringUI:
 
         pygame.draw.rect(self.screen, (40, 40, 40), self.board_area, 5)
         pygame.draw.rect(self.screen, (20, 20, 20), self.board_area.inflate(-8, -8), 2)
-
 
     def draw_controls(self):
         t1 = self.font.render("Player 1", True, (0, 0, 0))
@@ -191,14 +210,22 @@ class DomineeringUI:
             t = self.font.render(f"Turn: {self.turn_count}", True, (0, 0, 0))
         self.screen.blit(t, (600, 180))
 
-    # UTIL -----------------------------------------------------------
+    def draw_footer(self):
+        text = "Made by Maya Fakih & Jana Mneimneh"
+        surf = self.font.render(text, True, (0, 0, 0))
+        self.screen.blit(surf, (self.W - surf.get_width() - 20, self.H - 40))
+
+
+    # UTILS -----------------------------------------------------------
+
     def pixel_to_cell(self, pos):
-        x, y = pos
-        col = (x - self.board_area.x) // self.cell
-        row = (y - self.board_area.y) // self.cell
+        # NO MORE DEBUG SPAM HERE
+        row = (pos[1] - self.board_area.y) // self.cell
+        col = (pos[0] - self.board_area.x) // self.cell
         return row, col
 
-    # TICK LOOP -------------------------------------------------------
+    # MAIN LOOP -------------------------------------------------------
+
     def tick(self):
         self.clock.tick(60)
         mouse = pygame.mouse.get_pos()
@@ -217,6 +244,7 @@ class DomineeringUI:
             self.btn_start.handle(event)
             self.btn_reset.handle(event)
 
+            # UI clicks
             if (
                 event.type == pygame.MOUSEBUTTONDOWN
                 and self.game_locked
@@ -225,6 +253,7 @@ class DomineeringUI:
             ):
                 if self.board_area.collidepoint(event.pos):
                     r, c = self.pixel_to_cell(event.pos)
+
                     if self.current_player == "V":
                         move = (r, c, r + 1, c)
                         agent = self.agent_v
@@ -232,65 +261,79 @@ class DomineeringUI:
                         move = (r, c, r, c + 1)
                         agent = self.agent_h
 
-                    if self.game.is_valid(move, self.current_player):
-                        agent.set_move_from_ui(move)
+                    if self.debug:
+                        print(f"[DEBUG] UI attempted move {move} for player {self.current_player}")
 
-        # Hover Preview ------------------------------------
+                    if self.game.is_valid(move, self.current_player):
+                        if self.debug:
+                            print("[DEBUG] Move VALID — passed to agent")
+                        agent.set_move_from_ui(move)
+                    else:
+                        if self.debug:
+                            print("[DEBUG] Move INVALID")
+
+        # Hover preview (no debug)
         self.hover_preview = None
         if self.game_locked and self.current_player and not self.status_message:
             if self.board_area.collidepoint(mouse):
                 r, c = self.pixel_to_cell(mouse)
+
                 if self.current_player == "V":
-                    move = (r, c, r + 1, c)
+                    mv = (r, c, r + 1, c)
                     preview = [(r, c), (r + 1, c)]
                 else:
-                    move = (r, c, r, c + 1)
+                    mv = (r, c, r, c + 1)
                     preview = [(r, c), (r, c + 1)]
 
-                if self.game.is_valid(move, self.current_player):
+                if self.game.is_valid(mv, self.current_player):
                     self.hover_preview = preview
 
-        # Game over ----------------------------------------
+        # Game over (NO SPAM)
         if self.game and self.game.is_game_over():
             if not self.win_sound_played:
+                if self.debug:
+                    print("[DEBUG] Game over detected")
                 self.sound.play("win")
                 self.laugh_panel.show_random()
                 self.win_sound_played = True
             
             winner = self.game.get_winner()
-            if (winner == "H"):
-                self.status_message = f"Player 2 wins!"
-                self.game_locked = False
-                self.current_player = None
-            else:
-                self.status_message = f"Player 1 wins!"
-                self.game_locked = False
-                self.current_player = None
 
-                
-        # Agent moves --------------------------------------
+            if winner == "H":
+                self.status_message = "Player 2 wins!"
+            else:
+                self.status_message = "Player 1 wins!"
+
+            self.game_locked = False
+            self.current_player = None
+
+        # AGENT MOVE (KEEP DEBUG)
         if self.game_locked and self.game and self.current_player and not self.status_message:
             agent = self.agent_v if self.current_player == "V" else self.agent_h
+
             move = agent.get_move(self.game)
 
             if move:
+                if self.debug:
+                    print(f"[DEBUG] Agent {self.current_player} produced move {move}")
+
                 self.game.apply_move(move, self.current_player)
-                
-                # ← ← ← PLAY SOUNDS HERE
+
                 if self.current_player == "V":
                     self.sound.play("place_v")
                 else:
                     self.sound.play("place_h")
-                
+
                 self.board = [row[:] for row in self.game.board]
                 self.turn_count += 1
                 self.current_player = self.game.turn
 
-        # Redraw -------------------------------------------
+        # REDRAW
         self.screen.fill((230, 230, 230))
         self.draw_board()
         self.draw_controls()
         self.draw_stats()
+        self.draw_footer()
         self.laugh_panel.draw(self.screen)
         pygame.display.flip()
 
