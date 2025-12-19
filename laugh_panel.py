@@ -36,4 +36,4 @@ class LaughPanel:
 
     def draw(self, screen):
         if self.visible and self.current_image:
-            screen.blit(self.current_image, (600, 400))
+            screen.blit(self.current_image, (600, 250))

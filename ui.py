@@ -192,18 +192,51 @@ class DomineeringUI:
             t = self.font.render(f"Turn: {self.turn_count}", True, (0,0,0))
         self.screen.blit(t, (600,180))
 
-    def draw_move_counters(self):
-        if not self.game:
-            return
+    def predict_win_percent(self, v_moves, h_moves):
+        diff = v_moves - h_moves
+
+        if diff == 0:
+            return 50, 50
+
+        adv = min(abs(diff), 4)  # cap advantage
+        base = 50 + adv * 10     # 60, 70, 80, 90
+
+        if diff > 0:
+            return base, 100 - base   # V favored
         else:
-            v_moves = len(self.game.get_legal_moves("V"))
-            h_moves = len(self.game.get_legal_moves("H"))
-            text_v = self.font.render(f"Player 1 (V) moves left: {v_moves}", True, (180,60,60))
-            text_h = self.font.render(f"Player 2 (H) moves left: {h_moves}", True, (60,60,180))
-            x = 600
-            y = 250
-            self.screen.blit(text_v, (x,y))
-            self.screen.blit(text_h, (x,y+30))
+            return 100 - base, base   # H favored
+
+
+    def draw_move_counters(self):
+        if not self.game or not self.game_locked:
+            return
+
+        v_moves = len(self.game.get_legal_moves("V"))
+        h_moves = len(self.game.get_legal_moves("H"))
+
+        text_v = self.font.render(
+            f"Player 1 (V) moves left: {v_moves}", True, (180,60,60)
+        )
+        text_h = self.font.render(
+            f"Player 2 (H) moves left: {h_moves}", True, (60,60,180)
+        )
+
+        x = 600
+        y = 250
+        self.screen.blit(text_v, (x, y))
+        self.screen.blit(text_h, (x, y + 30))
+
+        # 🔮 Win prediction
+        v_pct, h_pct = self.predict_win_percent(v_moves, h_moves)
+
+        pred_title = self.font.render("Win prediction...", True, (0,0,0))
+        pred_v = self.font.render(f"Player 1: {v_pct}%", True, (180,60,60))
+        pred_h = self.font.render(f"Player 2: {h_pct}%", True, (60,60,180))
+
+        self.screen.blit(pred_title, (x, y + 70))
+        self.screen.blit(pred_v, (x + 20, y + 100))
+        self.screen.blit(pred_h, (x + 20, y + 130))
+
 
     def draw_rules(self):
         if not self.show_rules: return
