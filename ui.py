@@ -193,15 +193,17 @@ class DomineeringUI:
         self.screen.blit(t, (600,180))
 
     def draw_move_counters(self):
-        if not self.game: return
-        v_moves = len(self.game.get_legal_moves("V"))
-        h_moves = len(self.game.get_legal_moves("H"))
-        text_v = self.font.render(f"Player 1 (V) moves left: {v_moves}", True, (180,60,60))
-        text_h = self.font.render(f"Player 2 (H) moves left: {h_moves}", True, (60,60,180))
-        x = 600
-        y = 250
-        self.screen.blit(text_v, (x,y))
-        self.screen.blit(text_h, (x,y+30))
+        if not self.game:
+            return
+        else:
+            v_moves = len(self.game.get_legal_moves("V"))
+            h_moves = len(self.game.get_legal_moves("H"))
+            text_v = self.font.render(f"Player 1 (V) moves left: {v_moves}", True, (180,60,60))
+            text_h = self.font.render(f"Player 2 (H) moves left: {h_moves}", True, (60,60,180))
+            x = 600
+            y = 250
+            self.screen.blit(text_v, (x,y))
+            self.screen.blit(text_h, (x,y+30))
 
     def draw_rules(self):
         if not self.show_rules: return
@@ -240,7 +242,10 @@ class DomineeringUI:
             if event.type == pygame.QUIT:
                 pygame.quit(); quit()
             if not self.game_locked:
+                self.input_grid.handle(event)     # ✅ ADD
+                self.input_depth.handle(event)    # ✅ ADD
                 for b in self.p1_buttons + self.p2_buttons: b.handle(event)
+
             for b in [self.btn_start, self.btn_reset, self.btn_rules]: b.handle(event)
 
             if (event.type==pygame.MOUSEBUTTONDOWN and self.game_locked and self.game and not self.status_message):
